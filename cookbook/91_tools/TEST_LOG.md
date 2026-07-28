@@ -1,5 +1,25 @@
 # Test Log
 
+### file_generation_tools.py (generate_code_file)
+
+**Status:** PASS
+
+**Description:** Added `generate_code_file` to `FileGenerationTools` so agents can emit source code as downloadable file artifacts for any language (Python, JS, TS, Go, Rust, Java, etc.). The tool maps a `language` (or the filename extension) to a file extension and a valid MIME type, falling back to `text/plain` for languages without a dedicated allowlisted MIME type. Added `example_code_generation()` to the cookbook (Python + TypeScript) and wired it into `__main__`.
+
+**Result:** Unit tests pass (`pytest libs/agno/tests/unit/tools/test_file_generation.py` — 45 passed, 2 skipped) covering Python (`.py`, `text/x-python`), TypeScript fallback (`.ts`, `text/plain`), unknown-language default (`.txt`), extension inference from filename, alias resolution (`py`/`c++`/`c#`/`bash`/`golang`), and the `enable_code_generation` toggle. Standalone check confirmed `File` artifacts construct without raising (MIME type stays within `File.valid_mime_types()`) and content round-trips for python/typescript/go/rust. Live agent run not executed (no OpenAI credentials / demo venv in this environment).
+
+---
+
+### tenki_tools.py
+
+**Status:** PASS
+
+**Description:** Adds a Tenki-backed coding agent cookbook plus `TenkiTools` coverage for sync and native async command execution, persistent session reuse, SDK-managed workspace selection with optional explicit overrides, bounded sandbox ownership, cross-instance concurrent creation, bounded command collection and file reads, non-mutating status reporting, paused/terminated/missing sandbox recovery, safe filesystem paths, working-directory state, per-function registration flags, an `all` master switch, enabled-tool-aware instructions, and confirmation-gated termination.
+
+**Result:** All 60 focused Tenki unit tests and a 256-test toolkit/function/approval/workspace regression set passed. Review regressions verify that Python code can import files from the session working directory and that command timeouts retain a dedicated process-group supervisor until descendant cleanup is complete, preventing PGID recycling while terminating SIGTERM-ignoring orphans. The runner also returns a flushed, bounded JSON result when either or both process-group signals fail. Disabled tools are omitted from generated instructions, and `all=True` enables every sync and async tool while keeping sandbox termination confirmation-gated. Additional regressions verify that reconciliation tolerates replica visibility delays and cleanup failures, failed non-retryable resumes replace owned sandboxes while retryable failures preserve them, missing-session detection does not swallow unrelated `KeyError` exceptions, pinned toolkit configuration remains immutable, and file deletion cannot strand the current working directory by removing an ancestor. Auto-created sandboxes now always retain a bounded lifetime, every public tool has an `enable_*` registration flag, and bounded file reads avoid the `stat()`/stream race. Earlier allocation, concurrency, output-bounding, status, filesystem, and sync/async parity regressions continue to pass. A clean Python 3.12 environment installed the local `agno[tenki,sqlite]` extra and initialized the cookbook with `tenki==0.5.1`, a stable session ID, SQLite session storage, and confirmation-gated termination. The separate `agno[tenki,memori]` compatibility environment resolved `tenki==0.5.1`, `memori==3.3.6`, and `protobuf==5.29.6`; a no-install resolution of the full `agno[tools]` aggregate resolved all 325 packages with Tenki re-enabled. `./scripts/format.sh` and `./scripts/validate.sh` passed, including Ruff and mypy. The live cookbook was not rerun for this review because Tenki and model credentials were unavailable to the test process; the previous live validation created `/home/tenki/fibonacci.txt`, returned `[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]`, reported the correct sum of `88`, and terminated the sandbox successfully.
+
+---
+
 ### file_tools.py (Examples 6-8: exclude_patterns)
 
 **Status:** PASS
@@ -7,6 +27,16 @@
 **Description:** Added three new examples (6-8) to the existing FileTools cookbook demonstrating the `exclude_patterns` parameter from PR #7618. Example 6 uses the default exclusion list (hides `.venv`, `.git`, `__pycache__`, etc.); Example 7 subtracts `.venv` from `DEFAULT_EXCLUDE_PATTERNS` so the agent can inspect installed packages while still filtering noise; Example 8 uses `exclude_patterns=[]` for full visibility. A `setup_exclusion_sandbox()` helper creates a deterministic fixture (real source + stub `.venv/lib/python3.12/site-packages/requests/` + `.git/HEAD`) so Examples 6-8 are reproducible. New examples use `model=OpenAIResponses(id="gpt-5.4")` per project convention.
 
 **Result:** Ran the three new agents end-to-end with `PYTHONPATH=/Users/coolm/Developer/agno-pr-7618/libs/agno timeout 120 .venvs/demo/bin/python cookbook/91_tools/file_tools.py` (PYTHONPATH needed because the demo venv's editable install resolves to main, but the PR's new `DEFAULT_EXCLUDE_PATTERNS` export lives on the PR branch). Default agent returned only `README.md` and `main.py`; the `.venv`-allowed agent read `__version__ = '2.31.0'` from `.venv/lib/python3.12/site-packages/requests/__init__.py`; the no-exclusions agent listed `.git/HEAD` and every `.venv` file. Module import also verified under importlib — all three agents wire up with the expected `exclude_patterns` lengths (47, 46, 0).
+
+---
+
+### file_tools.py (Example 9: directory-scoped list_files)
+
+**Status:** PASS
+
+**Description:** Added Example 9 demonstrating the optional `directory` argument on `list_files`, backed by a `setup_subdir_sandbox()` fixture (`root_notes.txt` plus a `reports/` subdir with `q1.csv`, `q2.csv`, `summary.md`). Example 1's prompt was made concrete ("List three leading LLM providers and save the list to 'llm_providers.txt'") so the agent saves a file and creates the shared `tmp/file` base_dir that the read-only Example 2 then lists. `list_files` now falls back to `base_dir` when `directory` is empty, matching the `if directory:` guard `search_content` uses. New example uses `model=OpenAIResponses(id="gpt-5.4")` to match Examples 6-8. `ruff format` also reflowed `file_generation_tools.py` and `cookbook/scripts/cookbook_runner.py`.
+
+**Result:** All nine examples run clean end-to-end; the directory-scoped agent calls `list_files(directory="reports")` and returns only the `reports/` files. 24 filetools unit tests pass; `ruff format`, `ruff check`, and mypy clean.
 
 ---
 
@@ -67,5 +97,15 @@
 **Description:** Gemini-driven Agno agent runs `run_antigravity_task` to write a few files in the sandbox, then calls `download_antigravity_environment_snapshot` with `environment_id="current"` to resolve the env id from `agent.session_state` and save the resulting tar to disk. Demonstrates the full sandbox-write → archive flow through tool calls.
 
 **Result:** Unit tests pass covering snapshot URL construction, byte-for-byte write to disk, "current" resolution from session_state, and the no-cached-env error path. Live cookbook awaiting partner key.
+
+---
+
+### tavily_tools_advanced.py
+
+**Status:** PASS
+
+**Description:** Runs two agents with advanced Tavily search parameters against the live API: domain-restricted research (include_domains=["arxiv.org", "github.com"], exclude_domains=["reddit.com"], time_range="month", country="united states") and recent news scoped by day count (topic="news", days=3). Request payloads were additionally verified at the wire level: configured parameters present in every request, unset parameters omitted (the {query, search_depth, include_answer, max_results} baseline is unchanged when nothing is configured).
+
+**Result:** Both examples completed without errors. Domain-restricted search returned arxiv-sourced MoE papers, and the news agent returned items from the last few days. Note: answer text is model-composed; the domain restriction applies to the search results feeding it.
 
 ---

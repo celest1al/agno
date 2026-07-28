@@ -1,6 +1,6 @@
 [project]
 name = "agno"
-version = "2.7.2"
+version = "2.8.5"
 description = "The programming language for agentic software."
 requires-python = ">=3.9,<4"
 readme = "README.md"
@@ -138,15 +138,19 @@ notion = ["notion-client"]
 opencv = ["opencv-python"]
 oxylabs = ["oxylabs"]
 parallel = ["parallel-web>=1.0"]
+plivo = ["plivo"]
 psycopg = ["psycopg-binary", "psycopg"]
+redmine = ["python-redmine"]
 redshift = ["redshift-connector"]
 reportlab = ["reportlab"]
 salesforce = ["simple-salesforce"]
-scavio = ["scavio"]
+scavio = ["scavio>=0.4.0"]
 scrapegraph = ["scrapegraph-py>=2.0.0"]
 seltz = ["seltz>=0.2.0"]
-tavily = ["tavily-python"]
+superserve = ["superserve"]
+tavily = ["tavily-python>=0.7.9"]
 telegram = ["pyTelegramBotAPI>=4.32.0", "aiohttp"]
+tenki = ["tenki>=0.5.1"]
 todoist = ["todoist-api-python"]
 trafilatura = ["trafilatura"]
 twelvelabs = ["twelvelabs>=1.2.8"]
@@ -283,15 +287,19 @@ tools = [
   "agno[opencv]",
   "agno[oxylabs]",
   "agno[parallel]",
+  "agno[plivo]",
   "agno[psycopg]",
+  "agno[redmine]",
   "agno[redshift]",
   "agno[reportlab]",
   "agno[salesforce]",
   "agno[scavio]",
   "agno[scrapegraph]",
   "agno[seltz]",
+  "agno[superserve]",
   "agno[tavily]",
   "agno[telegram]",
+  "agno[tenki]",
   "agno[todoist]",
   "agno[trafilatura]",
   "agno[twelvelabs]",
@@ -503,6 +511,7 @@ module = [
   "crawl4ai.*",
   "daytona.*",
   "daytona_api_client.*",
+  "superserve.*",
   "discord.*",
   "docker.*",
   "docling.*",
@@ -570,6 +579,7 @@ module = [
   "pinecone.*",
   "portkey_ai.*",
   "playwright.sync_api.*",
+  "plivo.*",
   "psycopg.*",
   "pyarrow.*",
   "pycountry.*",
@@ -595,6 +605,7 @@ module = [
   "streamlit.*",
   "tavily.*",
   "telebot.*",
+  "tenki.*",
   "textract.*",
   "timeout_decorator.*",
   "tiktoken.*",
@@ -623,6 +634,7 @@ module = [
   "zep_cloud.*",
   "oxylabs.*",
   "parallel.*",
+  "redminelib.*",
   "redshift_connector.*",
   "reportlab.*",
   "surrealdb.*",
